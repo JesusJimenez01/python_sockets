@@ -11,17 +11,13 @@ def recv_msg(client):
 
                 if response.lower() == "waiting":
                     print("\n[Server]: Waiting for response...")
-                    print("Enter message: ", end="", flush=True)
+                    print("Enter message: ", end=" ", flush=True)
 
                 elif response.lower() == 'closed':
                     print('Connection closed')
                     break
 
-                else:
-                    print(f"\nReceived: {response}")
-
-            except Exception as e:
-                print(f"Error receiving message: {e}")
+            except:
                 break
     finally:
         client.close()
@@ -37,13 +33,14 @@ def run_client():
             thread = threading.Thread(target=recv_msg, args=(client,))
             thread.daemon = True
             thread.start()
+            msg = input('Enter message: ')
+            client.send(msg.encode())
 
-            while thread.is_alive():
-                msg = input('Enter message: ')
-                client.send(msg.encode())
 
-                if msg.lower() == 'closed':
-                    break
+            if msg.lower() == 'close':
+                client.close()
+                print('Connection closed')
+                return
 
         except ConnectionRefusedError:
             print('Connection refused. Reconnecting in 5 seconds...')

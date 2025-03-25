@@ -24,11 +24,12 @@ def handle_client(client_socket, addr):
                 print("No message received")
                 client_socket.send(b"waiting")
 
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
+    except OSError:
         client_socket.close()
         print(f"Client ({addr[0]}:{addr[1]}) disconnected")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 def run_server():
@@ -50,7 +51,9 @@ def run_server():
 
     except KeyboardInterrupt:
         print("Closing server...")
-        return
+
+    except OSError:
+        print("Client disconnected")
 
     except Exception as error:
         print(f"Error: {error}")
