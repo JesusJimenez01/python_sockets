@@ -3,15 +3,17 @@ import threading
 
 
 def handle_client(client_socket, addr):
+    delay = 0
     try:
         while True:
-            client_socket.settimeout(30) # Si pasan 30 segundos sin respuesta del cliente lanza un error
-            try:
+            client_socket.settimeout(5 + delay)
+            delay = min(delay + 1, 10)
 
+            try:
                 data = client_socket.recv(1024).decode()
+
                 if data.lower() == "close":
                     client_socket.send("closed".encode())
-                    client_socket.close()
                     break
 
                 print(f"Received: {data}")
@@ -20,8 +22,7 @@ def handle_client(client_socket, addr):
 
             except socket.timeout:
                 print("No message received")
-                break
-
+                client_socket.send(b"waiting")
 
     except Exception as e:
         print(f"Error: {e}")
@@ -32,12 +33,14 @@ def handle_client(client_socket, addr):
 
 def run_server():
     server_address = ('localhost', 8000)
+
     try:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(server_address)
         server.listen()
 
         print(f"Listening on {server_address}")
+
         while True:
             client_socket, client_address = server.accept()
             print(f"Accepted connection from {client_address}")
@@ -55,5 +58,6 @@ def run_server():
     finally:
         server.close()
         print("Server closed")
+
 
 run_server()

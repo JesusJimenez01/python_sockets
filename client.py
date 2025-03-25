@@ -1,43 +1,66 @@
 import socket
+import threading
 import time
+
+
+def recv_msg(client):
+    try:
+        while True:
+            try:
+                response = client.recv(1024).decode()
+
+                if response.lower() == "waiting":
+                    print("\n[Server]: Waiting for response...")
+                    print("Enter message: ", end="", flush=True)
+
+                elif response.lower() == 'closed':
+                    print('Connection closed')
+                    break
+
+                else:
+                    print(f"\nReceived: {response}")
+
+            except Exception as e:
+                print(f"Error receiving message: {e}")
+                break
+    finally:
+        client.close()
 
 
 def run_client():
     server_address = ('localhost', 8000)
-
     while True:
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.connect(server_address)
-            while True:
 
+            thread = threading.Thread(target=recv_msg, args=(client,))
+            thread.daemon = True
+            thread.start()
+
+            while thread.is_alive():
                 msg = input('Enter message: ')
                 client.send(msg.encode())
 
-                try:
-                    response = client.recv(1024).decode()
-                    if not response:
-                        break
+                if msg.lower() == 'closed':
+                    break
 
-                    if response.lower() == 'closed':
-                        print('Connection closed')
-                        return
-
-                except Exception:
-                    print('Error while connecting to server')
-                    return
-
-        except ConnectionRefusedError: # Si se desconecta espera 30s y vuelve a intentar conectarse
-            print('Connection refused. Reconnecting in 30 seconds...')
-            time.sleep(30)
+        except ConnectionRefusedError:
+            print('Connection refused. Reconnecting in 5 seconds...')
+            time.sleep(5)
             print('Reconnecting...')
         except KeyboardInterrupt:
             print('Client interrupted')
             break
+        except OSError:
+            print('Server error. Reconnecting in 5 seconds...')
+            time.sleep(5)
+            print('Reconnecting...')
         except Exception as e:
             print(f"Error: {e}")
             break
         finally:
             client.close()
+
 
 run_client()
