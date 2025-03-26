@@ -1,63 +1,14 @@
 import socket
-import threading
-import time
+import struct
 
+first_name = 'Jesus'
+last_name = 'Jimenez'
+age = 24
+gender = 'm'
+weight = 70.12
 
-def recv_msg(client):
-    try:
-        while True:
-            try:
-                response = client.recv(1024).decode()
-
-                if response.lower() == "waiting":
-                    print("\n[Server]: Waiting for response...")
-                    print("Enter message: ", end=" ", flush=True)
-
-                elif response.lower() == 'closed':
-                    print('Connection closed')
-                    break
-
-            except:
-                break
-    finally:
-        client.close()
-
-
-def run_client():
-    server_address = ('localhost', 8000)
-    while True:
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect(server_address)
-
-            thread = threading.Thread(target=recv_msg, args=(client,))
-            thread.daemon = True
-            thread.start()
-            msg = input('Enter message: ')
-            client.send(msg.encode())
-
-
-            if msg.lower() == 'close':
-                client.close()
-                print('Connection closed')
-                return
-
-        except ConnectionRefusedError:
-            print('Connection refused. Reconnecting in 5 seconds...')
-            time.sleep(5)
-            print('Reconnecting...')
-        except KeyboardInterrupt:
-            print('Client interrupted')
-            break
-        except OSError:
-            print('Server error. Reconnecting in 5 seconds...')
-            time.sleep(5)
-            print('Reconnecting...')
-        except Exception as e:
-            print(f"Error: {e}")
-            break
-        finally:
-            client.close()
-
-
-run_client()
+data = struct.pack("10s 10s i s f", first_name.encode(), last_name.encode(), age, gender.encode(), weight)
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(('localhost', 8000))
+client.send(data)
+client.close()

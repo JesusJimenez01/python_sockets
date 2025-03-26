@@ -1,66 +1,17 @@
 import socket
-import threading
+import struct
 
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(('localhost', 8000))
+server.listen()
 
-def handle_client(client_socket, addr):
-    delay = 0
-    try:
-        while True:
-            client_socket.settimeout(5 + delay)
-            delay = min(delay + 1, 10)
+conn, addr = server.accept()
 
-            try:
-                data = client_socket.recv(1024).decode()
+data = conn.recv(1024)
 
-                if data.lower() == "close":
-                    client_socket.send("closed".encode())
-                    break
-
-                print(f"Received: {data}")
-                response = "accepted"
-                client_socket.send(response.encode())
-
-            except socket.timeout:
-                print("No message received")
-                client_socket.send(b"waiting")
-
-    except OSError:
-        client_socket.close()
-        print(f"Client ({addr[0]}:{addr[1]}) disconnected")
-
-    except Exception as e:
-        print(f"Error: {e}")
-
-
-def run_server():
-    server_address = ('localhost', 8000)
-
-    try:
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(server_address)
-        server.listen()
-
-        print(f"Listening on {server_address}")
-
-        while True:
-            client_socket, client_address = server.accept()
-            print(f"Accepted connection from {client_address}")
-
-            thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-            thread.start()
-
-    except KeyboardInterrupt:
-        print("Closing server...")
-
-    except OSError:
-        print("Client disconnected")
-
-    except Exception as error:
-        print(f"Error: {error}")
-
-    finally:
-        server.close()
-        print("Server closed")
-
-
-run_server()
+first, last, age, gender, weight = struct.unpack('10s10sisf', data)
+print(first.decode())
+print(last.decode())
+print(age)
+print(gender.decode())
+print(weight)
