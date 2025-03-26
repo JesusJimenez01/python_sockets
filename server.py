@@ -1,36 +1,38 @@
 import socket
 import threading
+import ctypes
 
+
+class TemperatureData(ctypes.Structure):
+    _fields_ = [("temp1", ctypes.c_int),
+                ("temp2", ctypes.c_int),
+                ("temp3", ctypes.c_short),
+                ("temp4", ctypes.c_short),
+                ("temp5", ctypes.c_long),
+                ("temp6", ctypes.c_long)]
 
 def handle_client(client_socket, addr):
-    delay = 0
     try:
-        while True:
-            client_socket.settimeout(5 + delay)
-            delay = min(delay + 1, 10)
 
-            try:
-                data = client_socket.recv(1024).decode()
+        data = client_socket.recv(ctypes.sizeof(TemperatureData))
 
-                if data.lower() == "close":
-                    client_socket.send("closed".encode())
-                    break
+        if data:
 
-                print(f"Received: {data}")
-                response = "accepted"
-                client_socket.send(response.encode())
+            received_data = TemperatureData.from_buffer_copy(data)
 
-            except socket.timeout:
-                print("No message received")
-                client_socket.send(b"waiting")
+            print(f"Received Temperatures from {addr}:")
+            print(f"Temp1: {received_data.temp1}, Temp2: {received_data.temp2},")
+            print(f"Temp3: {received_data.temp3}, Temp4: {received_data.temp4},")
+            print(f"Temp5: {received_data.temp5}, Temp6: {received_data.temp6}")
 
-    except OSError:
-        client_socket.close()
-        print(f"Client ({addr[0]}:{addr[1]}) disconnected")
+            response = "accepted"
+            client_socket.send(response.encode())
 
     except Exception as e:
-        print(f"Error: {e}")
-
+        print(f"Error with client {addr}: {e}")
+    finally:
+        print(f"Closing connection with {addr}")
+        client_socket.close()
 
 def run_server():
     server_address = ('localhost', 8000)
@@ -51,16 +53,8 @@ def run_server():
 
     except KeyboardInterrupt:
         print("Closing server...")
-
-    except OSError:
-        print("Client disconnected")
-
-    except Exception as error:
-        print(f"Error: {error}")
-
     finally:
         server.close()
         print("Server closed")
-
 
 run_server()
